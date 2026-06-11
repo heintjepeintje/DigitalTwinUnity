@@ -2,7 +2,9 @@ name: Aikido Security Scan
 
 on:
   pull_request:
-    
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
   aikido-scan:
@@ -12,15 +14,18 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Setup Node (required if Aikido CLI uses npm)
+      - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 24
 
       - name: Install Aikido CLI
         run: npm install -g @aikidosecurity/cli
 
+      - name: Verify CLI
+        run: aikido --version
+
       - name: Run Aikido scan
-        run: aikido scan
+        run: aikido scan .
         env:
           AIKIDO_API_KEY: ${{ secrets.AIKIDO_API_KEY }}
