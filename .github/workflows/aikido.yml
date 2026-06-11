@@ -2,24 +2,23 @@ name: Aikido Security Scan
 
 on:
   pull_request:
+    branches:
+      - '*'
 
 jobs:
   aikido-scan:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout repository
+      - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Setup Node
-        uses: actions/setup-node@v4
+      - name: Detect new vulnerabilities
+        uses: AikidoSec/github-actions-workflow@v1.0.13
         with:
-          node-version: 24
-
-      - name: Install Aikido CLI
-        run: npm install -g @aikidosecurity/cli
-
-      - name: Run Aikido scan
-        run: aikido scan .
-        env:
-          AIKIDO_API_KEY: ${{ secrets.AIKIDO_API_KEY }}
+          secret-key: ${{ secrets.AIKIDO_SECRET_KEY }}
+          fail-on-dependency-scan: true
+          fail-on-sast-scan: false
+          fail-on-iac-scan: false
+          minimum-severity: 'CRITICAL'
+          timeout-seconds: 180
