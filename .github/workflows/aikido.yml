@@ -1,50 +1,21 @@
 name: Aikido Release Gated Scan
 on: [push, workflow_dispatch]
+
 jobs:
   aikido-scan:
     runs-on: ubuntu-latest
+
     steps:
+      # Step 1: Set up Node.js
       - name: Set up Node.js
         uses: actions/setup-node@v3
         with:
           node-version: '22'
 
+      # Step 2: Install dependencies
       - name: Install Aikido CI API Client
         run: npm install --global @aikidosec/ci-api-client
 
-      - name: Verify CLI installed
-        run: |
-          which aikido-api-client || echo "CLI not found in PATH"
-          aikido-api-client --version || echo "Version check failed"
-
-      - name: Check API key is set
-        run: |
-          if [ -z "${{ secrets.AIKIDO_CLIENT_API_KEY }}" ]; then
-            echo "ERROR: AIKIDO_CLIENT_API_KEY secret is not set!"
-            exit 1
-          else
-            echo "API key is set (length: ${#AIKIDO_CLIENT_API_KEY})"
-          fi
-        env:
-          AIKIDO_CLIENT_API_KEY: ${{ secrets.AIKIDO_CLIENT_API_KEY }}
-
+      # Step 3: Run Aikido Scan Release
       - name: Run Aikido Scan
-        run: |
-          echo "Repo: ${{ github.event.repository.name }}"
-          echo "SHA: $GITHUB_SHA"
-          aikido-api-client scan-release ${{ github.event.repository.name }} $GITHUB_SHA \
-            --apikey ${{ secrets.AIKIDO_CLIENT_API_KEY }} \
-            --fail-on-sast-scan \
-            --fail-on-iac-scan \
-            --fail-on-secrets-scan \
-            --debug || true
-          echo "Exit code: $?"
-        continue-on-error: true
-
-      - name: Run Aikido Scan (strict)
-        run: |
-          aikido-api-client scan-release ${{ github.event.repository.name }} $GITHUB_SHA \
-            --apikey ${{ secrets.AIKIDO_CLIENT_API_KEY }} \
-            --fail-on-sast-scan \
-            --fail-on-iac-scan \
-            --fail-on-secrets-scan
+        run: aikido-api-client scan-release ${{ github.event.repository.name }} $GITHUB_SHA --apikey ${{ secrets.AIKIDO_CLIENT_API_KEY }} --fail-on-sast-scan --fail-on-iac-scan --fail-on-secrets-scan
