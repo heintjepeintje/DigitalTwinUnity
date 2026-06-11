@@ -5,12 +5,20 @@ on:
     
 
 jobs:
-  scan:
+  aikido-scan:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout code
+      - name: Checkout repository
         uses: actions/checkout@v4
+
+      - name: Setup Node (required if Aikido CLI uses npm)
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install Aikido CLI
+        run: npm install -g @aikidosecurity/cli
 
       - name: Run Aikido scan
         run: aikido scan
