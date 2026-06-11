@@ -1,0 +1,18 @@
+name: Security (Aikido)
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+
+jobs:
+  aikido:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run Aikido Security Scan
+        uses: aikidosecurity/aikido-action@v1
+        with:
+          api_key: ${{ secrets.AIKIDO_API_KEY }}
