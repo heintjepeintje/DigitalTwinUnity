@@ -1,31 +1,24 @@
-name: Aikido Security Scan
-
+name: Aikido Release Gated Scan
 on:
-  pull_request:
-
-env:
-  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+  push:
+    branches:
+      - main
 
 jobs:
   aikido-scan:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Setup Node
-        uses: actions/setup-node@v4
+      # Step 1: Set up Node.js
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
         with:
-          node-version: 24
+          node-version: '22'
 
-      - name: Install Aikido CLI
-        run: npm install -g @aikidosecurity/cli
+      # Step 2: Install dependencies
+      - name: Install Aikido CI API Client
+        run: npm install --global @aikidosec/ci-api-client
 
-      - name: Verify CLI
-        run: aikido --version
-
-      - name: Run Aikido scan
-        run: aikido scan .
-        env:
-          AIKIDO_API_KEY: ${{ secrets.AIKIDO_API_KEY }}
+      # Step 3: Run Aikido Scan Release
+      - name: Run Aikido Scan
+        run: aikido-api-client scan-release ${{ github.event.repository.name }} $GITHUB_SHA --apikey ${{ secrets.AIKIDO_CLIENT_API_KEY }} --fail-on-sast-scan --fail-on-iac-scan --fail-on-secrets-scan
