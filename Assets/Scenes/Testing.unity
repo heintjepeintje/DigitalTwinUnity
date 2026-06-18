@@ -1839,7 +1839,7 @@ MonoBehaviour:
     hasUpgradedBrainParametersWithActionSpec: 1
   m_Model: {fileID: 0}
   m_InferenceDevice: 0
-  m_BehaviorType: 0
+  m_BehaviorType: 1
   m_BehaviorName: BusAgent
   TeamId: 0
   m_UseChildSensors: 1
@@ -1871,6 +1871,15 @@ MonoBehaviour:
   - {fileID: 1228811618}
   - {fileID: 679275514}
   - {fileID: 709671192}
+  checkpointReward: 1
+  lapReward: 2
+  borderPenalty: -1
+  stepPenalty: -0.0005
+  progressRewardMultiplier: 0.01
+  wrongCheckpointPenalty: -0.2
+  stuckPenalty: -0.5
+  stuckSpeedThreshold: 0.1
+  stuckTimeLimit: 3
 --- !u!1001 &1205653218
 PrefabInstance:
   m_ObjectHideFlags: 0
