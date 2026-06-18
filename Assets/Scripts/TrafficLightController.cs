@@ -1,8 +1,16 @@
-using System.Collections;
+﻿using System.Collections;
 using UnityEngine;
 
 public class TrafficLightController : MonoBehaviour
 {
+    public enum LightState { Green, Red }
+
+    [Header("Current State")]
+    [SerializeField] private LightState currentState = LightState.Red;
+    public LightState CurrentState => currentState;
+    public bool IsRed => currentState == LightState.Red;
+    public bool IsGreen => currentState == LightState.Green;
+
     [Header("Mesh Renderers")]
     public MeshRenderer carTrafficRenderer;
     public MeshRenderer pedestrianRenderer;
@@ -40,7 +48,6 @@ public class TrafficLightController : MonoBehaviour
     {
         carMaterials = carTrafficRenderer.materials;
         pedestrianMaterials = pedestrianRenderer.materials;
-
         StartCoroutine(TrafficCycle());
     }
 
@@ -48,25 +55,61 @@ public class TrafficLightController : MonoBehaviour
     {
         while (true)
         {
+            // Rood voor auto's → groen voor voetgangers
+            UpdateState(LightState.Red);
             SetCarState(red: true, yellow: false, green: false);
             SetPedestrianState(red: false, green: true);
             yield return new WaitForSeconds(redTime);
 
             yield return StartCoroutine(BlinkPedestrianGreen());
-
             SetPedestrianState(red: true, green: false);
             yield return new WaitForSeconds(allRedBufferTime);
 
+            // Rood-geel
             SetCarState(red: true, yellow: true, green: false);
             yield return new WaitForSeconds(redYellowTime);
 
+            // Groen voor auto's → rood voor voetgangers
+            UpdateState(LightState.Green);
             SetCarState(red: false, yellow: false, green: true);
+            SetPedestrianState(red: true, green: false);
             yield return new WaitForSeconds(greenTime);
 
+            // Geel
             SetCarState(red: false, yellow: true, green: false);
-            SetPedestrianState(red: true, green: false);
             yield return new WaitForSeconds(yellowTime);
         }
+    }
+
+    public event System.Action<LightState> OnStateChanged;
+
+    private void UpdateState(LightState newState)
+    {
+        currentState = newState;
+        //Debug.Log($"[TrafficLight] Status gewijzigd naar: {currentState}");
+        OnStateChanged?.Invoke(currentState); // nieuw
+    }
+
+    // Handmatig togglen via Inspector (voor testen)
+    [ContextMenu("Toggle Light")]
+    public void ToggleLight()
+    {
+        StopAllCoroutines();
+
+        if (IsRed)
+        {
+            UpdateState(LightState.Green);
+            SetCarState(red: false, yellow: false, green: true);
+            SetPedestrianState(red: true, green: false);
+        }
+        else
+        {
+            UpdateState(LightState.Red);
+            SetCarState(red: true, yellow: false, green: false);
+            SetPedestrianState(red: false, green: true);
+        }
+
+        StartCoroutine(TrafficCycle());
     }
 
     IEnumerator BlinkPedestrianGreen()
@@ -75,7 +118,6 @@ public class TrafficLightController : MonoBehaviour
         {
             SetEmission(pedestrianMaterials[pedestrianGreenIndex], false, greenColor);
             yield return new WaitForSeconds(pedestrianBlinkInterval);
-
             SetEmission(pedestrianMaterials[pedestrianGreenIndex], true, greenColor);
             yield return new WaitForSeconds(pedestrianBlinkInterval);
         }
