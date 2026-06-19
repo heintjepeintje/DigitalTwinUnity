@@ -2,31 +2,22 @@
     "BusAgent": {
         "checkpoints": [
             {
-                "steps": 499890,
-                "file_path": "results\\BusTestv1\\BusAgent\\BusAgent-499890.onnx",
-                "reward": 4.717122621396008,
-                "creation_time": 1781863350.2169485,
+                "steps": 112116,
+                "file_path": "results\\BusTestv1\\BusAgent\\BusAgent-112116.onnx",
+                "reward": 4.702537714575346,
+                "creation_time": 1781866307.413656,
                 "auxillary_file_paths": [
-                    "results\\BusTestv1\\BusAgent\\BusAgent-499890.pt"
-                ]
-            },
-            {
-                "steps": 772627,
-                "file_path": "results\\BusTestv1\\BusAgent\\BusAgent-772627.onnx",
-                "reward": null,
-                "creation_time": 1781863723.3316417,
-                "auxillary_file_paths": [
-                    "results\\BusTestv1\\BusAgent\\BusAgent-772627.pt"
+                    "results\\BusTestv1\\BusAgent\\BusAgent-112116.pt"
                 ]
             }
         ],
         "final_checkpoint": {
-            "steps": 772627,
+            "steps": 112116,
             "file_path": "results\\BusTestv1\\BusAgent.onnx",
-            "reward": null,
-            "creation_time": 1781863723.3316417,
+            "reward": 4.702537714575346,
+            "creation_time": 1781866307.413656,
             "auxillary_file_paths": [
-                "results\\BusTestv1\\BusAgent\\BusAgent-772627.pt"
+                "results\\BusTestv1\\BusAgent\\BusAgent-112116.pt"
             ]
         }
     },

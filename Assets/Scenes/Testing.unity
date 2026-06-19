@@ -238,7 +238,7 @@ MonoBehaviour:
   agentParameters:
     maxStep: 0
   hasUpgradedFromAgentParameters: 1
-  MaxStep: 1000
+  MaxStep: 0
   moveSpeed: 8
   turnSpeed: 80
   minMoveSpeed: 7
@@ -5467,7 +5467,7 @@ MonoBehaviour:
   agentParameters:
     maxStep: 0
   hasUpgradedFromAgentParameters: 1
-  MaxStep: 1000
+  MaxStep: 0
   moveSpeed: 8
   turnSpeed: 80
   minMoveSpeed: 7
@@ -8967,7 +8967,7 @@ MonoBehaviour:
   agentParameters:
     maxStep: 0
   hasUpgradedFromAgentParameters: 1
-  MaxStep: 1000
+  MaxStep: 0
   moveSpeed: 8
   turnSpeed: 80
   minMoveSpeed: 7
@@ -11280,7 +11280,7 @@ MonoBehaviour:
   agentParameters:
     maxStep: 0
   hasUpgradedFromAgentParameters: 1
-  MaxStep: 1000
+  MaxStep: 0
   moveSpeed: 8
   turnSpeed: 80
   minMoveSpeed: 7
@@ -13209,7 +13209,7 @@ MonoBehaviour:
   agentParameters:
     maxStep: 0
   hasUpgradedFromAgentParameters: 1
-  MaxStep: 1000
+  MaxStep: 0
   moveSpeed: 8
   turnSpeed: 80
   minMoveSpeed: 7
@@ -18819,7 +18819,7 @@ MonoBehaviour:
   agentParameters:
     maxStep: 0
   hasUpgradedFromAgentParameters: 1
-  MaxStep: 1000
+  MaxStep: 0
   moveSpeed: 8
   turnSpeed: 80
   minMoveSpeed: 7
@@ -20007,7 +20007,7 @@ MonoBehaviour:
   agentParameters:
     maxStep: 0
   hasUpgradedFromAgentParameters: 1
-  MaxStep: 1000
+  MaxStep: 0
   moveSpeed: 8
   turnSpeed: 80
   minMoveSpeed: 7
@@ -26536,7 +26536,7 @@ MonoBehaviour:
   agentParameters:
     maxStep: 0
   hasUpgradedFromAgentParameters: 1
-  MaxStep: 1000
+  MaxStep: 0
   moveSpeed: 8
   turnSpeed: 80
   minMoveSpeed: 7
