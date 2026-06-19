@@ -76,11 +76,11 @@ public class BusController : MonoBehaviour
 				wheel.Model.GetComponent<WheelCollider>().motorTorque = torque;
 			}
 
-			if (wheel.Axle == Axle.Front)
-			{
-				float angle = turnDirection * maxSteerAngle;
-				wheel.Model.GetComponent<WheelCollider>().steerAngle = angle;
-			}
+			Quaternion rotation;
+			Vector3 position;
+			wheel.Model.GetComponent<WheelCollider>().GetWorldPose(out position, out rotation);
+			wheel.Model.transform.position = position;
+			wheel.Model.transform.rotation = rotation;
 
 			wheel.Model.GetComponent<WheelCollider>().brakeTorque = brakeAction.ReadValue<float>() * maxBrakeTorque;
 		}
