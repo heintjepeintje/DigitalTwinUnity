@@ -1,127 +1,167 @@
 using System.Collections.Generic;
-using System.Collections.Specialized;
-using System.Linq;
-using NUnit.Framework;
-using Unity.VisualScripting;
 using UnityEngine;
-using Utils;
 
 public class PathFinder : MonoBehaviour
 {
-	private List<PathNode> _pathNodes;
+    [SerializeField] private GameObject startObject;
+    [SerializeField] private GameObject endObject;
 
-	[SerializeField]
-	private GameObject startObject;
+    private List<PathNode> pathNodes = new List<PathNode>();
 
-	[SerializeField]
-	private GameObject endObject;
+    public List<PathNode> CurrentRoute { get; private set; } = new List<PathNode>();
+    public bool HasRoute => CurrentRoute != null && CurrentRoute.Count > 0;
 
-	private void Start()
-	{
-		_pathNodes = new (GetComponentsInChildren<PathNode>());
-		List<PathNode> nodes = FindRoute(startObject.transform.position, endObject.transform.position);
+    private void Start()
+    {
+        BuildRoute();
+    }
 
-		foreach (PathNode node in nodes)
-		{
-			node.IsSelected = true;
-			Debug.Log($"Node: {node.name}");
-		}
-	}
+    public void RebuildRoute()
+    {
+        BuildRoute();
+    }
 
-	private List<PathNode> FindRoute(Vector3 start, Vector3 target)
-	{
-		PathNode closestStartNode = null;
-		float minStartDistance = float.PositiveInfinity;
-		foreach (var node in _pathNodes)
-		{
-			float distance = Vector3.Distance(start, node.transform.position);
-			if (distance < minStartDistance)
-			{
-				minStartDistance = distance;
-				closestStartNode = node;
-			}
-			node.IsSelected = false;
-		}
+    public void BuildRoute()
+    {
+        pathNodes = new List<PathNode>(GetComponentsInChildren<PathNode>());
 
-		PathNode closestEndNode = null;
-		float minEndDistance = float.PositiveInfinity;
-		foreach (var node in _pathNodes)
-		{
-			float distance = Vector3.Distance(target, node.transform.position);
-			if (distance < minEndDistance)
-			{
-				minEndDistance = distance;
-				closestEndNode = node;
-			}
-		}
+        foreach (PathNode node in pathNodes)
+        {
+            node.IsSelected = false;
+            node.GCost = float.PositiveInfinity;
+            node.HCost = 0f;
+            node.ParentNode = null;
+        }
 
-		closestStartNode.IsSelected = true;
-		closestEndNode.IsSelected = true;
+        if (startObject == null || endObject == null)
+        {
+            CurrentRoute = new List<PathNode>();
+            Debug.LogWarning("PathFinder: startObject of endObject ontbreekt.");
+            return;
+        }
 
-		List<PathNode> openSet = new();
-		HashSet<PathNode> closedSet = new HashSet<PathNode>();
-		openSet.Add(closestStartNode);
+        CurrentRoute = FindRoute(startObject.transform.position, endObject.transform.position);
 
-		Stack<PathNode> stacks = new();
+        foreach (PathNode node in CurrentRoute)
+        {
+            if (node != null)
+            {
+                node.IsSelected = true;
+                Debug.Log("Route node: " + node.name);
+            }
+        }
 
-		while (openSet.Count > 0)
-		{
-			PathNode currentNode = openSet[0];
-			foreach (var node in openSet)
-			{
-				if (node.FCost < currentNode.FCost || node.FCost == currentNode.FCost && node.HCost < currentNode.HCost)
-				{
-					currentNode = node;
-				}
-			}
+        Debug.Log("PathFinder route count: " + CurrentRoute.Count);
+    }
 
-			openSet.Remove(currentNode);
-			closedSet.Add(currentNode);
+    private List<PathNode> FindRoute(Vector3 start, Vector3 target)
+    {
+        PathNode closestStartNode = GetClosestNode(start);
+        PathNode closestEndNode = GetClosestNode(target);
 
-			if (currentNode == closestEndNode)
-			{
-				return RetracePath(closestStartNode, closestEndNode);
-			}
+        if (closestStartNode == null || closestEndNode == null)
+            return new List<PathNode>();
 
-			foreach (GameObject neighbor in currentNode.outputNodes)
-			{
-				PathNode neighborNode = neighbor.GetComponent<PathNode>();
-				if (closedSet.Contains(neighborNode))
-				{
-					continue;
-				}
+        List<PathNode> openSet = new List<PathNode>();
+        HashSet<PathNode> closedSet = new HashSet<PathNode>();
 
-				float cost = currentNode.GCost + Vector3.Distance(currentNode.transform.position, neighbor.transform.position);
-				if (cost < neighborNode.GCost || !openSet.Contains(neighborNode))
-				{
-					neighborNode.GCost = cost;
-					neighborNode.HCost = Vector3.Distance(neighbor.transform.position, closestEndNode.transform.position);
-					neighborNode.ParentNode = currentNode;
+        closestStartNode.GCost = 0f;
+        closestStartNode.HCost = Vector3.Distance(
+            closestStartNode.transform.position,
+            closestEndNode.transform.position
+        );
 
-					if (!openSet.Contains(neighborNode))
-					{
-						openSet.Add(neighborNode);
-					}
-				}
-			}
-		}
+        openSet.Add(closestStartNode);
 
-		return new List<PathNode>();
-	}
+        while (openSet.Count > 0)
+        {
+            PathNode currentNode = openSet[0];
 
-	List<PathNode> RetracePath(PathNode start, PathNode end)
-	{
-		List<PathNode> path = new();
-		PathNode currentNode = end;
+            for (int i = 1; i < openSet.Count; i++)
+            {
+                PathNode node = openSet[i];
+                if (node.FCost < currentNode.FCost ||
+                    (Mathf.Approximately(node.FCost, currentNode.FCost) && node.HCost < currentNode.HCost))
+                {
+                    currentNode = node;
+                }
+            }
 
-		while (currentNode != start)
-		{
-			path.Add(currentNode);
-			currentNode = currentNode.ParentNode;
-		}
+            openSet.Remove(currentNode);
+            closedSet.Add(currentNode);
 
-		path.Reverse();
+            if (currentNode == closestEndNode)
+            {
+                return RetracePath(closestStartNode, closestEndNode);
+            }
 
-		return path;
-	}
+            foreach (GameObject neighborObject in currentNode.outputNodes)
+            {
+                if (neighborObject == null)
+                    continue;
+
+                PathNode neighborNode = neighborObject.GetComponent<PathNode>();
+                if (neighborNode == null || closedSet.Contains(neighborNode))
+                    continue;
+
+                float tentativeCost = currentNode.GCost +
+                                      Vector3.Distance(currentNode.transform.position, neighborNode.transform.position);
+
+                if (tentativeCost < neighborNode.GCost || !openSet.Contains(neighborNode))
+                {
+                    neighborNode.GCost = tentativeCost;
+                    neighborNode.HCost = Vector3.Distance(
+                        neighborNode.transform.position,
+                        closestEndNode.transform.position
+                    );
+                    neighborNode.ParentNode = currentNode;
+
+                    if (!openSet.Contains(neighborNode))
+                    {
+                        openSet.Add(neighborNode);
+                    }
+                }
+            }
+        }
+
+        return new List<PathNode>();
+    }
+
+    private PathNode GetClosestNode(Vector3 position)
+    {
+        PathNode closestNode = null;
+        float minDistance = float.PositiveInfinity;
+
+        foreach (PathNode node in pathNodes)
+        {
+            float distance = Vector3.Distance(position, node.transform.position);
+            if (distance < minDistance)
+            {
+                minDistance = distance;
+                closestNode = node;
+            }
+        }
+
+        return closestNode;
+    }
+
+    private List<PathNode> RetracePath(PathNode start, PathNode end)
+    {
+        List<PathNode> path = new List<PathNode>();
+        PathNode currentNode = end;
+
+        while (currentNode != null && currentNode != start)
+        {
+            path.Add(currentNode);
+            currentNode = currentNode.ParentNode;
+        }
+
+        if (start != null)
+        {
+            path.Add(start);
+        }
+
+        path.Reverse();
+        return path;
+    }
 }
