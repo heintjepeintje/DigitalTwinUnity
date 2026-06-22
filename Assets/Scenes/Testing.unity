@@ -271,6 +271,11 @@ MonoBehaviour:
   wrongCheckpointPenalty: -0.2
   stuckPenalty: -0.5
   sidewaysPenaltyMultiplier: -0.001
+  enableStuckDetection: 1
+  stuckMovementThreshold: 0.02
+  stuckTimeLimit: 3
+  stuckCheckGracePeriod: 1
+  minDriveInputForStuckCheck: 0.5
 --- !u!114 &7125245
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -5500,6 +5505,11 @@ MonoBehaviour:
   wrongCheckpointPenalty: -0.2
   stuckPenalty: -0.5
   sidewaysPenaltyMultiplier: -0.001
+  enableStuckDetection: 1
+  stuckMovementThreshold: 0.02
+  stuckTimeLimit: 3
+  stuckCheckGracePeriod: 1
+  minDriveInputForStuckCheck: 0.5
 --- !u!114 &320868493
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -9000,6 +9010,11 @@ MonoBehaviour:
   wrongCheckpointPenalty: -0.2
   stuckPenalty: -0.5
   sidewaysPenaltyMultiplier: -0.001
+  enableStuckDetection: 1
+  stuckMovementThreshold: 0.02
+  stuckTimeLimit: 3
+  stuckCheckGracePeriod: 1
+  minDriveInputForStuckCheck: 0.5
 --- !u!114 &498911499
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -11313,6 +11328,11 @@ MonoBehaviour:
   wrongCheckpointPenalty: -0.2
   stuckPenalty: -0.5
   sidewaysPenaltyMultiplier: -0.001
+  enableStuckDetection: 1
+  stuckMovementThreshold: 0.02
+  stuckTimeLimit: 3
+  stuckCheckGracePeriod: 1
+  minDriveInputForStuckCheck: 0.5
 --- !u!114 &647842443
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -13242,6 +13262,11 @@ MonoBehaviour:
   wrongCheckpointPenalty: -0.2
   stuckPenalty: -0.5
   sidewaysPenaltyMultiplier: -0.001
+  enableStuckDetection: 1
+  stuckMovementThreshold: 0.02
+  stuckTimeLimit: 3
+  stuckCheckGracePeriod: 1
+  minDriveInputForStuckCheck: 0.5
 --- !u!114 &741149369
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -18852,6 +18877,11 @@ MonoBehaviour:
   wrongCheckpointPenalty: -0.2
   stuckPenalty: -0.5
   sidewaysPenaltyMultiplier: -0.001
+  enableStuckDetection: 1
+  stuckMovementThreshold: 0.02
+  stuckTimeLimit: 3
+  stuckCheckGracePeriod: 1
+  minDriveInputForStuckCheck: 0.5
 --- !u!114 &1149684059
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -20040,6 +20070,11 @@ MonoBehaviour:
   wrongCheckpointPenalty: -0.2
   stuckPenalty: -0.5
   sidewaysPenaltyMultiplier: -0.001
+  enableStuckDetection: 1
+  stuckMovementThreshold: 0.02
+  stuckTimeLimit: 3
+  stuckCheckGracePeriod: 1
+  minDriveInputForStuckCheck: 0.5
 --- !u!114 &1243795577
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -26569,6 +26604,11 @@ MonoBehaviour:
   wrongCheckpointPenalty: -0.2
   stuckPenalty: -0.5
   sidewaysPenaltyMultiplier: -0.001
+  enableStuckDetection: 1
+  stuckMovementThreshold: 0.02
+  stuckTimeLimit: 3
+  stuckCheckGracePeriod: 1
+  minDriveInputForStuckCheck: 0.5
 --- !u!114 &1632721170
 MonoBehaviour:
   m_ObjectHideFlags: 0

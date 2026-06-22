@@ -35,16 +35,22 @@ public class BusAgent : Agent
     public float stuckPenalty = -0.5f;
     public float sidewaysPenaltyMultiplier = -0.001f;
 
-    //[Header("Stuck Detection")]
-    //public float stuckSpeedThreshold = 0.1f;
-    //public float stuckTimeLimit = 3f;
+    [Header("Stuck Detection")]
+    public bool enableStuckDetection = true;
+    public float stuckMovementThreshold = 0.02f;
+    public float stuckTimeLimit = 3f;
+    public float stuckCheckGracePeriod = 1f;
+    public float minDriveInputForStuckCheck = 0.5f;
 
     private Rigidbody rb;
     private float moveInput;
     private float turnInput;
     private int currentCheckpointIndex;
     private float previousDistanceToCheckpoint;
-    //private float stuckTimer;
+    private float stuckTimer;
+    private float episodeTimer;
+    private Vector3 previousPosition;
+    private bool episodeEnding;
 
     public override void Initialize()
     {
@@ -55,19 +61,38 @@ public class BusAgent : Agent
 
     public override void OnEpisodeBegin()
     {
+        episodeEnding = false;
+
         moveSpeed = Random.Range(minMoveSpeed, maxMoveSpeed);
         turnSpeed = Random.Range(minTurnSpeed, maxTurnSpeed);
 
         rb.linearVelocity = Vector3.zero;
         rb.angularVelocity = Vector3.zero;
 
-        rb.position = startPoint.position;
-        rb.rotation = startPoint.rotation;
+        Vector3 randomOffset = new Vector3(
+            Random.Range(-spawnPositionRandomRange, spawnPositionRandomRange),
+            0f,
+            Random.Range(-spawnPositionRandomRange, spawnPositionRandomRange)
+        );
+
+        Vector3 spawnPosition = startPoint.position + randomOffset;
+        Quaternion spawnRotation = startPoint.rotation * Quaternion.Euler(
+            0f,
+            Random.Range(-spawnYawRandomRange, spawnYawRandomRange),
+            0f
+        );
+
+        rb.position = spawnPosition;
+        rb.rotation = spawnRotation;
+
+        Physics.SyncTransforms();
 
         moveInput = 0f;
         turnInput = 0f;
-        //stuckTimer = 0f;
+        stuckTimer = 0f;
+        episodeTimer = 0f;
         currentCheckpointIndex = 0;
+        previousPosition = rb.position;
 
         if (checkpoints != null && checkpoints.Length > 0)
         {
@@ -75,6 +100,10 @@ public class BusAgent : Agent
                 rb.position,
                 checkpoints[currentCheckpointIndex].position
             );
+        }
+        else
+        {
+            previousDistanceToCheckpoint = 0f;
         }
     }
 
@@ -86,30 +115,47 @@ public class BusAgent : Agent
         sensor.AddObservation(localVelocity.z / Mathf.Max(moveSpeed, 0.01f));
         sensor.AddObservation(rb.angularVelocity.y / 5f);
 
-        if (checkpoints != null && checkpoints.Length > 0)
-        {
-            Vector3 toCheckpoint = checkpoints[currentCheckpointIndex].position - transform.position;
-            Vector3 localDir = transform.InverseTransformDirection(toCheckpoint.normalized);
+        bool invalidCheckpoints =
+            checkpoints == null ||
+            checkpoints.Length == 0 ||
+            currentCheckpointIndex < 0 ||
+            currentCheckpointIndex >= checkpoints.Length ||
+            checkpoints[currentCheckpointIndex] == null;
 
-            float distance = Mathf.Clamp(toCheckpoint.magnitude / maxCheckpointDistance, 0f, 1f);
-            float angle = Vector3.SignedAngle(transform.forward, toCheckpoint.normalized, Vector3.up) / 180f;
-
-            sensor.AddObservation(localDir.x);
-            sensor.AddObservation(localDir.z);
-            sensor.AddObservation(distance);
-            sensor.AddObservation(angle);
-        }
-        else
+        if (invalidCheckpoints)
         {
             sensor.AddObservation(0f);
             sensor.AddObservation(0f);
             sensor.AddObservation(0f);
             sensor.AddObservation(0f);
+            return;
         }
+
+        Vector3 toCheckpoint = checkpoints[currentCheckpointIndex].position - transform.position;
+        float distanceToCheckpoint = toCheckpoint.magnitude;
+
+        Vector3 checkpointDirection = distanceToCheckpoint > 0.001f
+            ? toCheckpoint / distanceToCheckpoint
+            : transform.forward;
+
+        Vector3 localDir = transform.InverseTransformDirection(checkpointDirection);
+
+        float distance = Mathf.Clamp(distanceToCheckpoint / Mathf.Max(maxCheckpointDistance, 0.01f), 0f, 1f);
+        float angle = Vector3.SignedAngle(transform.forward, checkpointDirection, Vector3.up) / 180f;
+
+        sensor.AddObservation(localDir.x);
+        sensor.AddObservation(localDir.z);
+        sensor.AddObservation(distance);
+        sensor.AddObservation(angle);
     }
 
     public override void OnActionReceived(ActionBuffers actions)
     {
+        if (episodeEnding)
+            return;
+
+        episodeTimer += Time.fixedDeltaTime;
+
         int steerAction = actions.DiscreteActions[0];
         int driveAction = actions.DiscreteActions[1];
 
@@ -140,7 +186,9 @@ public class BusAgent : Agent
             float distanceDelta = previousDistanceToCheckpoint - currentDistanceToCheckpoint;
 
             if (distanceDelta > 0f)
+            {
                 AddReward(distanceDelta * progressRewardMultiplier);
+            }
 
             previousDistanceToCheckpoint = currentDistanceToCheckpoint;
         }
@@ -150,16 +198,46 @@ public class BusAgent : Agent
 
         AddReward(stepPenalty);
 
-        //if (rb.linearVelocity.magnitude < stuckSpeedThreshold)
-        //    stuckTimer += Time.fixedDeltaTime;
-        //else
-        //    stuckTimer = 0f;
+        UpdateStuckDetection();
+    }
 
-        //if (stuckTimer > stuckTimeLimit)
-        //{
-        //    AddReward(stuckPenalty);
-        //    EndEpisode();
-        //}
+    private void UpdateStuckDetection()
+    {
+        if (!enableStuckDetection || episodeEnding)
+            return;
+
+        if (episodeTimer < stuckCheckGracePeriod)
+        {
+            previousPosition = rb.position;
+            stuckTimer = 0f;
+            return;
+        }
+
+        if (moveInput < minDriveInputForStuckCheck)
+        {
+            previousPosition = rb.position;
+            stuckTimer = 0f;
+            return;
+        }
+
+        float movedDistance = Vector3.Distance(rb.position, previousPosition);
+
+        if (movedDistance < stuckMovementThreshold)
+        {
+            stuckTimer += Time.fixedDeltaTime;
+        }
+        else
+        {
+            stuckTimer = 0f;
+        }
+
+        previousPosition = rb.position;
+
+        if (stuckTimer >= stuckTimeLimit)
+        {
+            AddReward(stuckPenalty);
+            SafeEndEpisode();
+        }
     }
 
     public override void Heuristic(in ActionBuffers actionsOut)
@@ -177,15 +255,21 @@ public class BusAgent : Agent
 
     private void OnCollisionEnter(Collision collision)
     {
+        if (episodeEnding)
+            return;
+
         if (collision.gameObject.CompareTag("Border"))
         {
             AddReward(borderPenalty);
-            EndEpisode();
+            SafeEndEpisode();
         }
     }
 
     private void OnTriggerEnter(Collider other)
     {
+        if (episodeEnding)
+            return;
+
         if (!other.CompareTag("Checkpoint") || checkpoints == null || checkpoints.Length == 0)
             return;
 
@@ -197,7 +281,7 @@ public class BusAgent : Agent
             if (currentCheckpointIndex >= checkpoints.Length)
             {
                 AddReward(lapReward);
-                EndEpisode();
+                SafeEndEpisode();
                 return;
             }
 
@@ -210,5 +294,14 @@ public class BusAgent : Agent
         {
             AddReward(wrongCheckpointPenalty);
         }
+    }
+
+    private void SafeEndEpisode()
+    {
+        if (episodeEnding)
+            return;
+
+        episodeEnding = true;
+        EndEpisode();
     }
 }
