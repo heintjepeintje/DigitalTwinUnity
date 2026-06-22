@@ -1,45 +1,88 @@
+using System;
+using System.Collections.Generic;
+using NUnit.Framework;
 using UnityEngine;
+using UnityEngine.InputSystem;
 
 [RequireComponent(typeof(Rigidbody))]
 public class BusController : MonoBehaviour
 {
-    public float moveSpeed = 8f;
-    public float turnSpeed = 80f;
+	public enum Axle
+	{
+		All,
+		Front,
+		Rear
+	}
 
-    private Rigidbody rb;
-    private float moveInput;
-    private float turnInput;
+	[Serializable]
+	public struct Wheel
+	{
+		public Axle Axle;
+		public GameObject Model;
+	}
 
-    void Start()
+	[SerializeField]
+	public Axle DrivingAxle;
+
+	[SerializeField]
+	public List<Wheel> wheels;
+
+	[SerializeField]
+	public float torqueMultiplier;
+
+	[SerializeField]
+	public float maxSteerAngle;
+
+	private Rigidbody rb;
+
+	[SerializeField]
+	private float maxBrakeTorque;
+
+	private InputAction gasAction;
+	private InputAction brakeAction;
+	private InputAction turnAction;
+
+	[SerializeField]
+	private Vector3 _centerOfMass;
+
+	private void OnDrawGizmos()
+	{
+		Gizmos.color = Color.green;
+		Gizmos.DrawSphere(_centerOfMass + transform.position, 0.25f);
+	}
+
+	void Start()
     {
         rb = GetComponent<Rigidbody>();
-    }
 
-    void Update()
+		gasAction = InputSystem.actions.FindAction("Gas");
+		brakeAction = InputSystem.actions.FindAction("Brake");
+		turnAction = InputSystem.actions.FindAction("Turn");
+
+		rb.centerOfMass = _centerOfMass;
+	}
+
+	void FixedUpdate()
     {
-        moveInput = 0f;
-        turnInput = 0f;
+		float turnDirection = turnAction.ReadValue<Vector2>().x;
 
-        if (Input.GetKey(KeyCode.W))
-            moveInput = 1f;
-        else if (Input.GetKey(KeyCode.S))
-            moveInput = -1f;
+		//rb.AddForce(Vector3.down * (44.496f * rb.linearVelocity).magnitude);
 
-        if (Input.GetKey(KeyCode.A))
-            turnInput = -1f;
-        else if (Input.GetKey(KeyCode.D))
-            turnInput = 1f;
-    }
+		foreach (Wheel wheel in wheels)
+		{
+			if (wheel.Axle == DrivingAxle || DrivingAxle == Axle.All)
+			{
+				float torque = gasAction.ReadValue<float>() * torqueMultiplier;
+				wheel.Model.GetComponent<WheelCollider>().motorTorque = torque;
+			}
 
-    void FixedUpdate()
-    {
-        Vector3 move = transform.forward * moveInput * moveSpeed * Time.fixedDeltaTime;
-        rb.MovePosition(rb.position + move);
+			Quaternion rotation;
+			Vector3 position;
+			wheel.Model.GetComponent<WheelCollider>().GetWorldPose(out position, out rotation);
+			wheel.Model.transform.position = position;
+			wheel.Model.transform.rotation = rotation;
 
-        if (Mathf.Abs(moveInput) > 0.01f)
-        {
-            Quaternion turn = Quaternion.Euler(0f, turnInput * turnSpeed * Time.fixedDeltaTime, 0f);
-            rb.MoveRotation(rb.rotation * turn);
-        }
+			wheel.Model.GetComponent<WheelCollider>().brakeTorque = brakeAction.ReadValue<float>() * maxBrakeTorque;
+		}
     }
 }
