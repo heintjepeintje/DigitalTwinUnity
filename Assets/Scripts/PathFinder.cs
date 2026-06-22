@@ -164,4 +164,15 @@ public class PathFinder : MonoBehaviour
         path.Reverse();
         return path;
     }
+
+    public void SetRouteEndpointsAndRebuild(Transform start, Transform end)
+    {
+        if (start != null)
+            startObject = start.gameObject;
+
+        if (end != null)
+            endObject = end.gameObject;
+
+        RebuildRoute();
+    }
 }

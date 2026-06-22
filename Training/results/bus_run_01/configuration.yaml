@@ -63,14 +63,14 @@ engine_settings:
   no_graphics: false
 environment_parameters: null
 checkpoint_settings:
-  run_id: BusTestv1
+  run_id: bus_run_01
   initialize_from: null
   load_model: false
   resume: false
-  force: false
-  train_model: true
+  force: true
+  train_model: false
   inference: false
   results_dir: results
 torch_settings:
-  device: null
+  device: cuda:0
 debug: false

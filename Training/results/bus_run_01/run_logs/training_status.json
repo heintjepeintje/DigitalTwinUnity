@@ -1,0 +1,29 @@
+{
+    "BusAgent": {
+        "checkpoints": [
+            {
+                "steps": 407472,
+                "file_path": "results\\bus_run_01\\BusAgent\\BusAgent-407472.onnx",
+                "reward": 60.06137304835849,
+                "creation_time": 1782149801.1678634,
+                "auxillary_file_paths": [
+                    "results\\bus_run_01\\BusAgent\\BusAgent-407472.pt"
+                ]
+            }
+        ],
+        "final_checkpoint": {
+            "steps": 407472,
+            "file_path": "results\\bus_run_01\\BusAgent.onnx",
+            "reward": 60.06137304835849,
+            "creation_time": 1782149801.1678634,
+            "auxillary_file_paths": [
+                "results\\bus_run_01\\BusAgent\\BusAgent-407472.pt"
+            ]
+        }
+    },
+    "metadata": {
+        "stats_format_version": "0.3.0",
+        "mlagents_version": "0.30.0",
+        "torch_version": "2.5.1+cu121"
+    }
+}
