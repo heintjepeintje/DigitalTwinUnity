@@ -1,0 +1,47 @@
+{
+    "name": "root",
+    "metadata": {
+        "timer_format_version": "0.1.0",
+        "start_time_seconds": "1782212179",
+        "python_version": "3.9.13 (tags/v3.9.13:6de2ca5, May 17 2022, 16:36:42) [MSC v.1929 64 bit (AMD64)]",
+        "command_line_arguments": "C:\\School\\DigitalTwinUnity\\Training\\venv\\Scripts\\mlagents-learn bus_config.yaml --run-id=BusTestv1 --train",
+        "mlagents_version": "0.30.0",
+        "mlagents_envs_version": "0.30.0",
+        "communication_protocol_version": "1.5.0",
+        "pytorch_version": "2.5.1+cu121",
+        "numpy_version": "1.21.2",
+        "end_time_seconds": "1782212190"
+    },
+    "total": 10.6340973,
+    "count": 1,
+    "self": 10.0057428,
+    "children": {
+        "run_training.setup": {
+            "total": 0.1151818,
+            "count": 1,
+            "self": 0.1151818
+        },
+        "TrainerController.start_learning": {
+            "total": 0.5131726999999999,
+            "count": 1,
+            "self": 0.0002419000000000171,
+            "children": {
+                "TrainerController._reset_env": {
+                    "total": 0.5129229999999998,
+                    "count": 1,
+                    "self": 0.5129229999999998
+                },
+                "trainer_threads": {
+                    "total": 5.00000000069889e-07,
+                    "count": 1,
+                    "self": 5.00000000069889e-07
+                },
+                "TrainerController._save_models": {
+                    "total": 7.300000000043383e-06,
+                    "count": 1,
+                    "self": 7.300000000043383e-06
+                }
+            }
+        }
+    }
+}
