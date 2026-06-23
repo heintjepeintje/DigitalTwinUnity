@@ -1,0 +1,56 @@
+{
+    "BusAgent": {
+        "checkpoints": [
+            {
+                "steps": 499901,
+                "file_path": "results\\bus_run_03\\BusAgent\\BusAgent-499901.onnx",
+                "reward": 29.0940483212471,
+                "creation_time": 1782208563.4939182,
+                "auxillary_file_paths": [
+                    "results\\bus_run_03\\BusAgent\\BusAgent-499901.pt"
+                ]
+            },
+            {
+                "steps": 999880,
+                "file_path": "results\\bus_run_03\\BusAgent\\BusAgent-999880.onnx",
+                "reward": null,
+                "creation_time": 1782209597.664562,
+                "auxillary_file_paths": [
+                    "results\\bus_run_03\\BusAgent\\BusAgent-999880.pt"
+                ]
+            },
+            {
+                "steps": 1499872,
+                "file_path": "results\\bus_run_03\\BusAgent\\BusAgent-1499872.onnx",
+                "reward": 52.94715921084086,
+                "creation_time": 1782210627.1547258,
+                "auxillary_file_paths": [
+                    "results\\bus_run_03\\BusAgent\\BusAgent-1499872.pt"
+                ]
+            },
+            {
+                "steps": 1731179,
+                "file_path": "results\\bus_run_03\\BusAgent\\BusAgent-1731179.onnx",
+                "reward": null,
+                "creation_time": 1782211116.8037803,
+                "auxillary_file_paths": [
+                    "results\\bus_run_03\\BusAgent\\BusAgent-1731179.pt"
+                ]
+            }
+        ],
+        "final_checkpoint": {
+            "steps": 1731179,
+            "file_path": "results\\bus_run_03\\BusAgent.onnx",
+            "reward": null,
+            "creation_time": 1782211116.8037803,
+            "auxillary_file_paths": [
+                "results\\bus_run_03\\BusAgent\\BusAgent-1731179.pt"
+            ]
+        }
+    },
+    "metadata": {
+        "stats_format_version": "0.3.0",
+        "mlagents_version": "0.30.0",
+        "torch_version": "2.5.1+cu121"
+    }
+}

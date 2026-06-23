@@ -9056,13 +9056,13 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 317708302}
   serializedVersion: 2
-  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalRotation: {x: 0, y: -0.7071068, z: 0, w: 0.7071068}
   m_LocalPosition: {x: 51.5, y: -0.1, z: -155}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 745229453}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: -90, z: 0}
 --- !u!43 &318892057
 Mesh:
   m_ObjectHideFlags: 0
@@ -10607,7 +10607,7 @@ MonoBehaviour:
   statusText: {fileID: 1142417765}
   lapText: {fileID: 0}
   waypointText: {fileID: 0}
-  busAgent: {fileID: 0}
+  busAgent: {fileID: 1539166110}
   dayNightManager: {fileID: 993893500}
 --- !u!43 &372832578
 Mesh:
@@ -12380,7 +12380,7 @@ PrefabInstance:
     - target: {fileID: 8074953910483580730, guid: 437662472d5464249a55cbf8cafa6cb0, type: 3}
       propertyPath: m_Model
       value: 
-      objectReference: {fileID: 5022602860645237092, guid: ebd7cdc8d1c72de4e90e2fac29ecd5b2, type: 3}
+      objectReference: {fileID: 5022602860645237092, guid: 84a3aa283dc1a2a4ba8bdc243ba6ae75, type: 3}
     - target: {fileID: 8074953910483580730, guid: 437662472d5464249a55cbf8cafa6cb0, type: 3}
       propertyPath: m_BehaviorName
       value: BusAgentRijden
@@ -18935,13 +18935,13 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 635009728}
   serializedVersion: 2
-  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalRotation: {x: 0, y: 0.7071068, z: 0, w: 0.7071068}
   m_LocalPosition: {x: 51.5, y: -0.1, z: -159}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 745229453}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 90, z: 0}
 --- !u!43 &635174060
 Mesh:
   m_ObjectHideFlags: 0
@@ -42873,6 +42873,17 @@ Mesh:
       - serializedVersion: 1
         m_IndexStart: 0
         m_IndexCount: 0
+--- !u!114 &1539166110 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 180320495819099991, guid: 437662472d5464249a55cbf8cafa6cb0, type: 3}
+  m_PrefabInstance: {fileID: 407521986}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 10a118906e0095548a6cd2e0576e9fbd, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::BusAgent
 --- !u!1 &1539857059
 GameObject:
   m_ObjectHideFlags: 0
