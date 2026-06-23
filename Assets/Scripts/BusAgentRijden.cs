@@ -5,7 +5,7 @@ using Unity.MLAgents.Actuators;
 using Unity.MLAgents.Sensors;
 
 [RequireComponent(typeof(Rigidbody))]
-public class BusAgent : Agent
+public class BusAgentRijden : Agent
 {
     [Header("Movement")]
     public float moveSpeed = 8f;

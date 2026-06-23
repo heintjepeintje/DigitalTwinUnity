@@ -20,7 +20,7 @@ public class HUD : MonoBehaviour
     public TMP_Text waypointText;
 
     [Header("References")]
-    public BusAgent busAgent;
+    public BusAgentRijden busAgent;
     public DayNightManager dayNightManager;
 
     private void Start()
