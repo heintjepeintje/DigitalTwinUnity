@@ -16,80 +16,89 @@ public class HUD : MonoBehaviour
     public TMP_Text speedText;
     public TMP_Text confidenceText;
     public TMP_Text statusText;
+    public TMP_Text lapText;
+    public TMP_Text waypointText;
 
     [Header("References")]
-    public Rigidbody carRigidbody;
+    public BusAgentRijden busAgent;
     public DayNightManager dayNightManager;
-    public AIVisibilityMonitor aiMonitor;
 
-    private bool isRunning = false;
-    private bool isPaused = false;
-
-    void Start()
+    private void Start()
     {
-        dayNightButton.onClick.AddListener(ToggleDayNight);
-        startStopButton.onClick.AddListener(ToggleStartStop);
-        pauseButton.onClick.AddListener(TogglePause);
+        if (dayNightButton != null) dayNightButton.onClick.AddListener(ToggleDayNight);
+        if (startStopButton != null) startStopButton.onClick.AddListener(ToggleStartStop);
+        if (pauseButton != null) pauseButton.onClick.AddListener(TogglePause);
 
         UpdateUI();
     }
 
-    void Update()
+    private void Update()
     {
-        if (carRigidbody != null)
+        if (busAgent != null)
         {
-            float speedKmh = carRigidbody.linearVelocity.magnitude * 3.6f;
-            speedText.text = $"Snelheid: {speedKmh:0.0} km/h";
+            if (speedText != null)
+                speedText.text = $"Speed: {busAgent.CurrentSpeedKmh:0.0} km/h";
+
+            if (confidenceText != null)
+                confidenceText.text = busAgent.CurrentConfidence >= 0f
+                    ? $"Confidence: {busAgent.CurrentConfidence:0.00}"
+                    : "Confidence: N/A";
+
+            if (statusText != null)
+                statusText.text = $"Status: {busAgent.CurrentStatus}";
+
+            if (lapText != null)
+                lapText.text = $"Laps: {busAgent.LapCount}";
+
+            if (waypointText != null)
+                waypointText.text = $"Waypoint: {busAgent.CurrentWaypointIndex + 1}/{busAgent.TotalWaypoints}";
         }
 
-        if (aiMonitor != null)
-        {
-            confidenceText.text = $"Confidence: {aiMonitor.stoplightConfidence:0.00}";
-        }
+        UpdateUI();
     }
 
-    void ToggleDayNight()
+    private void ToggleDayNight()
     {
         if (dayNightManager != null)
         {
             dayNightManager.ToggleDayNight();
-            dayNightButtonText.text = dayNightManager.IsNight ? "Zet dag" : "Zet nacht";
+
+            if (dayNightButtonText != null)
+                dayNightButtonText.text = dayNightManager.IsNight ? "Zet dag" : "Zet nacht";
         }
     }
 
-    void ToggleStartStop()
+    private void ToggleStartStop()
     {
-        isRunning = !isRunning;
+        if (busAgent == null)
+            return;
 
-        if (!isRunning)
-        {
-            isPaused = false;
-            Time.timeScale = 1f;
-        }
-
-        UpdateUI();
-    }
-
-    void TogglePause()
-    {
-        if (!isRunning) return;
-
-        isPaused = !isPaused;
-        Time.timeScale = isPaused ? 0f : 1f;
-
-        UpdateUI();
-    }
-
-    void UpdateUI()
-    {
-        startStopButtonText.text = isRunning ? "Stop" : "Start";
-        pauseButtonText.text = isPaused ? "Resume" : "Pauze";
-
-        if (!isRunning)
-            statusText.text = "Status: Gestopt";
-        else if (isPaused)
-            statusText.text = "Status: Gepauzeerd";
+        if (busAgent.IsRunning)
+            busAgent.StopBus();
         else
-            statusText.text = "Status: Actief";
+            busAgent.StartBus();
+
+        UpdateUI();
+    }
+
+    private void TogglePause()
+    {
+        if (busAgent == null || !busAgent.IsRunning)
+            return;
+
+        busAgent.PauseBus(!busAgent.IsPaused);
+        UpdateUI();
+    }
+
+    private void UpdateUI()
+    {
+        if (busAgent != null)
+        {
+            if (startStopButtonText != null)
+                startStopButtonText.text = busAgent.IsRunning ? "Stop" : "Start";
+
+            if (pauseButtonText != null)
+                pauseButtonText.text = busAgent.IsPaused ? "Resume" : "Pauze";
+        }
     }
 }

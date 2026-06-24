@@ -5,7 +5,7 @@ using Unity.MLAgents.Actuators;
 using Unity.MLAgents.Sensors;
 
 [RequireComponent(typeof(Rigidbody))]
-public class TrainingBusAgent : Agent
+public class BusAgentRijden : Agent
 {
     [Header("Movement")]
     public float moveSpeed = 8f;
@@ -21,17 +21,14 @@ public class TrainingBusAgent : Agent
     public int routeLookAhead = 2;
     public bool requireTriggerToAdvanceNode = false;
 
-    [Header("Shared Route Training")]
-    public Transform[] busStops;
-    public bool avoidChoosingSameStopTwice = true;
-    public int completionsBeforeRouteChange = 10;
-    public bool synchronizeRouteAcrossEnvironments = true;
+    [Header("Mode")]
+    public bool continuousRuntimeMode = true;
 
     [Header("Rewards")]
-    public float nodeReward = 2f;
-    public float routeCompleteReward = 5f;
+    public float nodeReward = 0.75f;
+    public float routeCompleteReward = 2.5f;
     public float borderPenalty = -1.0f;
-    public float stepPenalty = -0.005f;
+    public float stepPenalty = -0.0005f;
     public float progressRewardMultiplier = 0.02f;
     public float regressPenaltyMultiplier = -0.025f;
     public float headingRewardMultiplier = 0.0025f;
@@ -53,11 +50,12 @@ public class TrainingBusAgent : Agent
     public float nodeStallTimeLimit = 2.5f;
     public float nodeStallPenalty = -0.75f;
 
-    private static int sharedBusStopIndex = -1;
-    private static int sharedPreviousBusStopIndex = -1;
-    private static int sharedRouteCompletionCount = 0;
+    [Header("Bus Stops")]
+    public Transform[] busStops;
+    public bool avoidChoosingSameStopTwice = true;
 
     private Transform currentBusStopTarget;
+    private Transform currentRouteStart;
     private int currentBusStopIndex = -1;
 
     private float bestDistanceToCurrentNode;
@@ -74,12 +72,28 @@ public class TrainingBusAgent : Agent
 
     private List<PathNode> currentRoute = new List<PathNode>();
     private int currentRouteIndex = 0;
+    private int lapCount = 0;
+
+    private bool isRunning = true;
+    private bool isPaused = false;
+    private string currentStatus = "Idle";
+    private float currentConfidence = -1f;
+
+    public float CurrentSpeedKmh => moveSpeed;
+    public float CurrentConfidence => currentConfidence;
+    public string CurrentStatus => currentStatus;
+    public int LapCount => lapCount;
+    public int CurrentWaypointIndex => Mathf.Clamp(currentRouteIndex, 0, Mathf.Max(TotalWaypoints - 1, 0));
+    public int TotalWaypoints => currentRoute != null ? currentRoute.Count : 0;
+    public bool IsRunning => isRunning;
+    public bool IsPaused => isPaused;
 
     public override void Initialize()
     {
         rb = GetComponent<Rigidbody>();
         rb.centerOfMass = new Vector3(0f, -0.5f, 0f);
         rb.constraints = RigidbodyConstraints.FreezeRotationX | RigidbodyConstraints.FreezeRotationZ;
+        currentStatus = "Initialized";
     }
 
     public override void OnEpisodeBegin()
@@ -99,9 +113,12 @@ public class TrainingBusAgent : Agent
         stuckTimer = 0f;
         episodeTimer = 0f;
         previousPosition = rb.position;
+        currentConfidence = -1f;
         currentRouteIndex = 0;
 
-        SelectSharedTrainingRoute();
+        currentRouteStart = startPoint;
+
+        ChooseNextRandomBusStop();
         BuildRouteToCurrentBusStop();
 
         if (HasValidCurrentNode())
@@ -109,12 +126,14 @@ public class TrainingBusAgent : Agent
             previousDistanceToNode = Vector3.Distance(rb.position, GetCurrentNodePosition());
             bestDistanceToCurrentNode = previousDistanceToNode;
             nodeStallTimer = 0f;
+            currentStatus = "Driving To " + currentBusStopTarget.name;
         }
         else
         {
             previousDistanceToNode = 0f;
             bestDistanceToCurrentNode = 0f;
             nodeStallTimer = 0f;
+            currentStatus = "No Route";
         }
     }
 
@@ -135,8 +154,13 @@ public class TrainingBusAgent : Agent
                 sensor.AddObservation(0f);
                 sensor.AddObservation(0f);
             }
+
+            currentConfidence = -1f;
             return;
         }
+
+        Vector3 firstNodeDir = (GetCurrentNodePosition() - transform.position).normalized;
+        currentConfidence = Mathf.Clamp01((Vector3.Dot(transform.forward, firstNodeDir) + 1f) * 0.5f);
 
         for (int i = 0; i < routeLookAhead; i++)
         {
@@ -174,7 +198,24 @@ public class TrainingBusAgent : Agent
         if (episodeEnding)
             return;
 
+        if (!isRunning)
+        {
+            moveInput = 0f;
+            turnInput = 0f;
+            currentStatus = "Stopped";
+            return;
+        }
+
+        if (isPaused)
+        {
+            moveInput = 0f;
+            turnInput = 0f;
+            currentStatus = "Paused";
+            return;
+        }
+
         episodeTimer += Time.fixedDeltaTime;
+        currentStatus = "Running";
 
         int steerAction = actions.DiscreteActions[0];
         int driveAction = actions.DiscreteActions[1];
@@ -200,6 +241,7 @@ public class TrainingBusAgent : Agent
 
         float sidewaysSpeed = Mathf.Abs(transform.InverseTransformDirection(rb.linearVelocity).x);
         AddReward(sidewaysSpeed * sidewaysPenaltyMultiplier);
+
         AddReward(stepPenalty);
 
         UpdateStuckDetection();
@@ -266,6 +308,19 @@ public class TrainingBusAgent : Agent
         if (nodeStallTimer >= nodeStallTimeLimit)
         {
             AddReward(nodeStallPenalty);
+            currentStatus = "Node Stall";
+
+            if (continuousRuntimeMode)
+            {
+                ResetBusToRouteStart();
+                return;
+            }
+
+            if (continuousRuntimeMode)
+            {
+                ResetBusToCurrentRouteStart();
+                return;
+            }
             SafeEndEpisode();
         }
     }
@@ -276,30 +331,65 @@ public class TrainingBusAgent : Agent
             return;
 
         AddReward(nodeReward);
+        Debug.Log("Reached route node: " + currentRoute[currentRouteIndex].name);
+
         currentRouteIndex++;
 
         if (currentRouteIndex >= currentRoute.Count)
         {
+            lapCount++;
             AddReward(routeCompleteReward);
 
-            if (synchronizeRouteAcrossEnvironments)
+            if (continuousRuntimeMode)
             {
-                sharedRouteCompletionCount++;
+                currentRouteStart = currentBusStopTarget;
 
-                if (sharedRouteCompletionCount >= Mathf.Max(1, completionsBeforeRouteChange))
+                ChooseNextRandomBusStop();
+                BuildRouteToCurrentBusStop();
+
+                if (HasValidCurrentNode())
                 {
-                    sharedRouteCompletionCount = 0;
-                    PickNewSharedRoute();
+                    previousDistanceToNode = Vector3.Distance(transform.position, GetCurrentNodePosition());
+                    bestDistanceToCurrentNode = previousDistanceToNode;
+                    nodeStallTimer = 0f;
+                    currentStatus = "Driving To " + currentBusStopTarget.name;
+                }
+                else
+                {
+                    currentStatus = "No Route Found";
                 }
             }
+            else
+            {
+                currentStatus = "Route Complete";
+                SafeEndEpisode();
+            }
 
-            SafeEndEpisode();
             return;
         }
 
         previousDistanceToNode = Vector3.Distance(transform.position, GetCurrentNodePosition());
         bestDistanceToCurrentNode = previousDistanceToNode;
         nodeStallTimer = 0f;
+    }
+
+    private bool HasValidCurrentNode()
+    {
+        return currentRoute != null &&
+               currentRoute.Count > 0 &&
+               currentRouteIndex >= 0 &&
+               currentRouteIndex < currentRoute.Count &&
+               currentRoute[currentRouteIndex] != null;
+    }
+
+    private Vector3 GetCurrentNodePosition()
+    {
+        return currentRoute[currentRouteIndex].transform.position;
+    }
+
+    private Transform GetCurrentNodeTransform()
+    {
+        return currentRoute[currentRouteIndex].transform;
     }
 
     private void UpdateStuckDetection()
@@ -337,8 +427,32 @@ public class TrainingBusAgent : Agent
         if (stuckTimer >= stuckTimeLimit)
         {
             AddReward(stuckPenalty);
+            currentStatus = "Stuck";
+
+            if (continuousRuntimeMode)
+            {
+                ResetBusToCurrentRouteStart();
+                return;
+            }
+
             SafeEndEpisode();
         }
+    }
+
+    public override void Heuristic(in ActionBuffers actionsOut)
+    {
+        var discreteActions = actionsOut.DiscreteActions;
+
+        discreteActions[0] = 0;
+        discreteActions[1] = 0;
+
+        if (!isRunning || isPaused)
+            return;
+
+        if (Input.GetKey(KeyCode.A)) discreteActions[0] = 1;
+        else if (Input.GetKey(KeyCode.D)) discreteActions[0] = 2;
+
+        if (Input.GetKey(KeyCode.W)) discreteActions[1] = 1;
     }
 
     private void OnCollisionEnter(Collision collision)
@@ -349,6 +463,13 @@ public class TrainingBusAgent : Agent
         if (collision.gameObject.CompareTag("Border"))
         {
             AddReward(borderPenalty);
+            currentStatus = "Collision";
+
+            if (continuousRuntimeMode)
+            {
+                ResetBusToCurrentRouteStart();
+                return;
+            }
             SafeEndEpisode();
         }
     }
@@ -367,57 +488,32 @@ public class TrainingBusAgent : Agent
         else
         {
             AddReward(wrongNodeTriggerPenalty);
+            Debug.Log("Wrong node trigger: " + other.name + " | expected: " + expectedNode.name);
         }
     }
 
-    private void SelectSharedTrainingRoute()
+    private void ChooseNextRandomBusStop()
     {
         if (busStops == null || busStops.Length == 0)
         {
             currentBusStopTarget = null;
             currentBusStopIndex = -1;
+            currentStatus = "No Bus Stops";
             return;
         }
 
-        if (!synchronizeRouteAcrossEnvironments)
-        {
-            if (currentBusStopIndex < 0)
-            {
-                currentBusStopIndex = GetRandomBusStopIndex(currentBusStopIndex);
-            }
-
-            currentBusStopTarget = busStops[currentBusStopIndex];
-            return;
-        }
-
-        if (sharedBusStopIndex < 0)
-        {
-            PickNewSharedRoute();
-        }
-
-        currentBusStopIndex = sharedBusStopIndex;
-        currentBusStopTarget = busStops[currentBusStopIndex];
-    }
-
-    private void PickNewSharedRoute()
-    {
-        sharedBusStopIndex = GetRandomBusStopIndex(sharedPreviousBusStopIndex);
-        sharedPreviousBusStopIndex = sharedBusStopIndex;
-    }
-
-    private int GetRandomBusStopIndex(int previousIndex)
-    {
         int nextIndex = Random.Range(0, busStops.Length);
 
         if (avoidChoosingSameStopTwice && busStops.Length > 1)
         {
-            while (nextIndex == previousIndex)
+            while (nextIndex == currentBusStopIndex)
             {
                 nextIndex = Random.Range(0, busStops.Length);
             }
         }
 
-        return nextIndex;
+        currentBusStopIndex = nextIndex;
+        currentBusStopTarget = busStops[currentBusStopIndex];
     }
 
     private void BuildRouteToCurrentBusStop()
@@ -425,34 +521,138 @@ public class TrainingBusAgent : Agent
         currentRoute.Clear();
         currentRouteIndex = 0;
 
-        if (pathFinder == null || currentBusStopTarget == null || startPoint == null)
+        if (pathFinder == null || currentBusStopTarget == null || currentRouteStart == null)
+        {
+            currentStatus = "Missing Route Target";
             return;
+        }
 
-        pathFinder.SetRouteEndpointsAndRebuild(startPoint, currentBusStopTarget);
+        pathFinder.SetRouteEndpointsAndRebuild(currentRouteStart, currentBusStopTarget);
 
         if (pathFinder.HasRoute)
         {
             currentRoute = new List<PathNode>(pathFinder.CurrentRoute);
+            currentStatus = "Driving To Stop " + currentBusStopTarget.name;
+        }
+        else
+        {
+            currentStatus = "No Route Found";
         }
     }
 
-    private bool HasValidCurrentNode()
+    private void ResetBusToRouteStart()
     {
-        return currentRoute != null &&
-               currentRoute.Count > 0 &&
-               currentRouteIndex >= 0 &&
-               currentRouteIndex < currentRoute.Count &&
-               currentRoute[currentRouteIndex] != null;
+        rb.linearVelocity = Vector3.zero;
+        rb.angularVelocity = Vector3.zero;
+
+        if (currentRouteStart != null)
+        {
+            rb.position = currentRouteStart.position;
+            rb.rotation = currentRouteStart.rotation;
+            Physics.SyncTransforms();
+        }
+
+        moveInput = 0f;
+        turnInput = 0f;
+        stuckTimer = 0f;
+        episodeTimer = 0f;
+        previousPosition = rb.position;
+        currentConfidence = -1f;
+
+        BuildRouteToCurrentBusStop();
+
+        if (HasValidCurrentNode())
+        {
+            previousDistanceToNode = Vector3.Distance(rb.position, GetCurrentNodePosition());
+            bestDistanceToCurrentNode = previousDistanceToNode;
+            nodeStallTimer = 0f;
+            currentStatus = "Driving To " + currentBusStopTarget.name;
+        }
+        else
+        {
+            previousDistanceToNode = 0f;
+            bestDistanceToCurrentNode = 0f;
+            nodeStallTimer = 0f;
+            currentStatus = "No Route";
+        }
     }
 
-    private Vector3 GetCurrentNodePosition()
+    private void ResetBusToCurrentRouteStart()
     {
-        return currentRoute[currentRouteIndex].transform.position;
+        rb.linearVelocity = Vector3.zero;
+        rb.angularVelocity = Vector3.zero;
+
+        if (currentRouteStart != null)
+        {
+            rb.position = currentRouteStart.position;
+            rb.rotation = currentRouteStart.rotation;
+            Physics.SyncTransforms();
+        }
+
+        moveInput = 0f;
+        turnInput = 0f;
+        stuckTimer = 0f;
+        episodeTimer = 0f;
+        previousPosition = rb.position;
+        currentConfidence = -1f;
+
+        BuildRouteToCurrentBusStop();
+
+        if (HasValidCurrentNode())
+        {
+            previousDistanceToNode = Vector3.Distance(rb.position, GetCurrentNodePosition());
+            bestDistanceToCurrentNode = previousDistanceToNode;
+            nodeStallTimer = 0f;
+            currentStatus = "Driving To " + currentBusStopTarget.name;
+        }
+        else
+        {
+            previousDistanceToNode = 0f;
+            bestDistanceToCurrentNode = 0f;
+            nodeStallTimer = 0f;
+            currentStatus = "No Route";
+        }
     }
 
-    private Transform GetCurrentNodeTransform()
+    public void StartBus()
     {
-        return currentRoute[currentRouteIndex].transform;
+        isRunning = true;
+        isPaused = false;
+        currentStatus = "Running";
+    }
+
+    public void StopBus()
+    {
+        isRunning = false;
+        isPaused = false;
+        moveInput = 0f;
+        turnInput = 0f;
+
+        if (rb != null)
+        {
+            rb.linearVelocity = Vector3.zero;
+            rb.angularVelocity = Vector3.zero;
+        }
+
+        currentStatus = "Stopped";
+    }
+
+    public void PauseBus(bool pause)
+    {
+        if (!isRunning)
+            return;
+
+        isPaused = pause;
+        moveInput = 0f;
+        turnInput = 0f;
+
+        if (rb != null)
+        {
+            rb.linearVelocity = Vector3.zero;
+            rb.angularVelocity = Vector3.zero;
+        }
+
+        currentStatus = isPaused ? "Paused" : "Running";
     }
 
     private void SafeEndEpisode()
@@ -462,18 +662,5 @@ public class TrainingBusAgent : Agent
 
         episodeEnding = true;
         EndEpisode();
-    }
-
-    public override void Heuristic(in ActionBuffers actionsOut)
-    {
-        var discreteActions = actionsOut.DiscreteActions;
-
-        discreteActions[0] = 0;
-        discreteActions[1] = 0;
-
-        if (Input.GetKey(KeyCode.A)) discreteActions[0] = 1;
-        else if (Input.GetKey(KeyCode.D)) discreteActions[0] = 2;
-
-        if (Input.GetKey(KeyCode.W)) discreteActions[1] = 1;
     }
 }
