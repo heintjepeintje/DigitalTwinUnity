@@ -15,7 +15,6 @@ public class HUD : MonoBehaviour
     [Header("Texts")]
     public TMP_Text dayNightButtonText;
     public TMP_Text startStopButtonText;
-    public TMP_Text pauseButtonText;
     public TMP_Text speedText;
     public TMP_Text confidenceText;
     public TMP_Text statusText;
@@ -102,9 +101,6 @@ public class HUD : MonoBehaviour
         {
             if (startStopButtonText != null)
                 startStopButtonText.text = busAgent.IsRunning ? "Stop" : "Start";
-
-            if (pauseButtonText != null)
-                pauseButtonText.text = busAgent.IsPaused ? "Resume" : "Pauze";
         }
     }
 
