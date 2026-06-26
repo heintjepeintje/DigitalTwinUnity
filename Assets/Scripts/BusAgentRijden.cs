@@ -11,6 +11,14 @@ public class BusAgentRijden : Agent
     public float moveSpeed = 8f;
     public float turnSpeed = 80f;
 
+    [Header("Speed Slider")]
+    public float minSliderSpeed = 1f;
+    public float maxSliderSpeed = 15f;
+    public float minDisplaySpeedKmh = 1f;
+    public float maxDisplaySpeedKmh = 45f;
+
+    [SerializeField] private float currentSliderSpeed = 8f;
+
     [Header("Scene References")]
     public Transform startPoint;
     public PathFinder pathFinder;
@@ -79,7 +87,15 @@ public class BusAgentRijden : Agent
     private string currentStatus = "Idle";
     private float currentConfidence = -1f;
 
-    public float CurrentSpeedKmh => moveSpeed;
+    public float CurrentSpeedKmh
+    {
+        get
+        {
+            float normalized = Mathf.InverseLerp(minSliderSpeed, maxSliderSpeed, currentSliderSpeed);
+            return Mathf.Lerp(minDisplaySpeedKmh, maxDisplaySpeedKmh, normalized);
+        }
+    }
+    public float CurrentSliderSpeed => currentSliderSpeed;
     public float CurrentConfidence => currentConfidence;
     public string CurrentStatus => currentStatus;
     public int LapCount => lapCount;
@@ -93,6 +109,8 @@ public class BusAgentRijden : Agent
         rb = GetComponent<Rigidbody>();
         rb.centerOfMass = new Vector3(0f, -0.5f, 0f);
         rb.constraints = RigidbodyConstraints.FreezeRotationX | RigidbodyConstraints.FreezeRotationZ;
+
+        SetSpeedFromSlider(currentSliderSpeed);
         currentStatus = "Initialized";
     }
 
@@ -653,6 +671,18 @@ public class BusAgentRijden : Agent
         }
 
         currentStatus = isPaused ? "Paused" : "Running";
+    }
+
+    public void SetSpeedFromSlider(float sliderValue)
+    {
+        currentSliderSpeed = Mathf.Clamp(sliderValue, minSliderSpeed, maxSliderSpeed);
+        moveSpeed = currentSliderSpeed;
+    }
+
+    public float GetDisplaySpeedFromSlider(float sliderValue)
+    {
+        float normalized = Mathf.InverseLerp(minSliderSpeed, maxSliderSpeed, sliderValue);
+        return Mathf.Lerp(minDisplaySpeedKmh, maxDisplaySpeedKmh, normalized);
     }
 
     private void SafeEndEpisode()

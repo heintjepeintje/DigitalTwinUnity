@@ -9,6 +9,9 @@ public class HUD : MonoBehaviour
     public Button startStopButton;
     public Button pauseButton;
 
+    [Header("Slider")]
+    public Slider speedSlider;
+
     [Header("Texts")]
     public TMP_Text dayNightButtonText;
     public TMP_Text startStopButtonText;
@@ -16,8 +19,6 @@ public class HUD : MonoBehaviour
     public TMP_Text speedText;
     public TMP_Text confidenceText;
     public TMP_Text statusText;
-    public TMP_Text lapText;
-    public TMP_Text waypointText;
 
     [Header("References")]
     public BusAgentRijden busAgent;
@@ -28,6 +29,17 @@ public class HUD : MonoBehaviour
         if (dayNightButton != null) dayNightButton.onClick.AddListener(ToggleDayNight);
         if (startStopButton != null) startStopButton.onClick.AddListener(ToggleStartStop);
         if (pauseButton != null) pauseButton.onClick.AddListener(TogglePause);
+        if (speedSlider != null)
+        {
+            speedSlider.minValue = 1f;
+            speedSlider.maxValue = 15f;
+            speedSlider.wholeNumbers = true;
+
+            if (busAgent != null)
+                speedSlider.value = busAgent.CurrentSliderSpeed;
+
+            speedSlider.onValueChanged.AddListener(OnSpeedSliderChanged);
+        }
 
         UpdateUI();
     }
@@ -46,12 +58,6 @@ public class HUD : MonoBehaviour
 
             if (statusText != null)
                 statusText.text = $"Status: {busAgent.CurrentStatus}";
-
-            if (lapText != null)
-                lapText.text = $"Laps: {busAgent.LapCount}";
-
-            if (waypointText != null)
-                waypointText.text = $"Waypoint: {busAgent.CurrentWaypointIndex + 1}/{busAgent.TotalWaypoints}";
         }
 
         UpdateUI();
@@ -100,5 +106,31 @@ public class HUD : MonoBehaviour
             if (pauseButtonText != null)
                 pauseButtonText.text = busAgent.IsPaused ? "Resume" : "Pauze";
         }
+    }
+
+    private void UpdateRuntimeInfo()
+    {
+        if (busAgent == null)
+            return;
+
+        if (speedText != null)
+            speedText.text = $"Speed: {busAgent.CurrentSpeedKmh:0} km/h";
+
+        if (confidenceText != null)
+            confidenceText.text = busAgent.CurrentConfidence >= 0f
+                ? $"Confidence: {busAgent.CurrentConfidence:0.00}"
+                : "Confidence: N/A";
+
+        if (statusText != null)
+            statusText.text = $"Status: {busAgent.CurrentStatus}";
+    }
+
+    private void OnSpeedSliderChanged(float value)
+    {
+        if (busAgent == null)
+            return;
+
+        busAgent.SetSpeedFromSlider(value);
+        UpdateRuntimeInfo();
     }
 }
